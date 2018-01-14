@@ -6,42 +6,45 @@ server s1 {
 } -start
 
 varnish v1 -vcl+backend {
-	import std;
-	import ${vmod_shell};
+    import std;
+    import ${vmod_shell};
 
-	sub vcl_init {
-	    new php = shell.exec("php /srv/eval.php");
-	    new bc = shell.exec("bc -q");
-	}
+    sub vcl_init {
+        new php = shell.exec("php /srv/eval.php");
+        new bc = shell.exec("bc -q");
+    }
 
-	sub vcl_deliver {
+    sub vcl_deliver {
         // cmd
-	    set resp.http.php-test-1 = php.cmd("pow(2, 8)");
-	    set resp.http.php-test-2 = php.cmd("'PHP '.phpversion()");
-	    set resp.http.php-test-3 = php.cmd("gethostbyaddr('" + client.ip + "')");
-	    set resp.http.php-test-4 = php.cmd("null");
-	    bc.cmd("2*3+4");
-	    set resp.http.bc-test-1 = bc.cmd(".+5-6");
-	    // write / read
-	    // note that two below calls do locking separately
-	    set resp.http.bc-test-2-write = bc.write("(.-7)*(8+9-10)");
+        set resp.http.php-test-1 = php.cmd("pow(2, 8)");
+        set resp.http.php-test-2 = php.cmd("'PHP '.phpversion()");
+        set resp.http.php-test-3 = php.cmd("gethostbyaddr('" + client.ip + "')");
+        set resp.http.php-test-4 = php.cmd("null");
+        bc.cmd("2*3+4");
+        set resp.http.bc-test-1 = bc.cmd(".+5-6");
+        // write / read
+        // note that two below calls do locking separately
+        set resp.http.bc-test-2-write = bc.write("(.-7)*(8+9-10)");
         set resp.http.bc-test-2-read = bc.read();
         // pid
-	    set resp.http.bc-pid = bc.pid();
-	    set resp.http.php-pid = php.pid();
-	}
+        set resp.http.bc-pid = bc.pid();
+        set resp.http.php-pid = php.pid();
+        // shell.exec
+        set resp.http.shell-exec-1 = shell.exec_once("uname -a");
+    }
 } -start
 
 client c1 {
-	txreq -url "/" -hdr "Host: vmod.shell"
-	rxresp
-	expect resp.http.php-test-1 == "256"
-	expect resp.http.php-test-2 ~ "^PHP [0-9]+"
-	expect resp.http.php-test-3 == "localhost"
-	expect resp.http.php-test-4 == ""
-	expect resp.http.bc-test-1 == "9"
-	expect resp.http.bc-test-2-write == "true"
-	expect resp.http.bc-test-2-read == "14"
-	expect resp.http.bc-pid ~ "^[0-9]+$"
-	expect resp.http.php-pid ~ "^[0-9]+$"
+    txreq -url "/" -hdr "Host: vmod.shell"
+    rxresp
+    expect resp.http.php-test-1 == "256"
+    expect resp.http.php-test-2 ~ "^PHP [0-9]+"
+    expect resp.http.php-test-3 == "localhost"
+    expect resp.http.php-test-4 == ""
+    expect resp.http.bc-test-1 == "9"
+    expect resp.http.bc-test-2-write == "true"
+    expect resp.http.bc-test-2-read == "14"
+    expect resp.http.bc-pid ~ "^[0-9]+$"
+    expect resp.http.php-pid ~ "^[0-9]+$"
+    expect resp.http.shell-exec-1 ~ "Linux"
 } -run

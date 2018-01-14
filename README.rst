@@ -14,4 +14,5 @@ SYNOPSIS
     Method BOOL .write(STRING value)
     Method STRING .cmd(STRING value)
     Method INT .pid()
+    $Function STRING exec_once(STRING cmd)
 

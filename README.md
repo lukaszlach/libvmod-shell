@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/badge/version-1.0-lightgrey.svg?style=flat)
 ![Version](https://img.shields.io/badge/Varnish-5-blue.svg?style=flat)
 
-Varnish Module (VMOD) for executing long-running shell commands with support of two-way communication and command interface based on one-line request and one-line response, similar to [redirectors and rewrite scripts](https://wiki.squid-cache.org/Features/Redirectors) available in Squid Cache. Although this is not production-ready, it is useful for internal services and provisioning of features you are going to move to VMOD later, as allows you to use **any programming language or sh scripting** and expose it's features to VCL.
+Varnish Module (VMOD) for executing long-running shell commands with support of two-way communication and command interface based on one-line request and one-line response, similar to [redirectors and rewrite scripts](https://wiki.squid-cache.org/Features/Redirectors) available in Squid Cache. It is useful for internal services and provisioning of features you are going to move to VMOD later, as allows you to use **any programming language or sh scripting** and expose it's features to VCL.
 
 ## Synopsis
 
@@ -15,6 +15,8 @@ STRING <obj>.cmd(STRING value)
 BOOL   <obj>.write(STRING value)
 STRING <obj>.read()
 INT    <obj>.pid()
+
+STRING exec_once(STRING cmd)
 ```
 
 ## Building
@@ -29,6 +31,8 @@ make install
 ```
 
 ## Examples
+
+### `cmd()`
 
 ```vcl
 vcl 4.0;
@@ -83,6 +87,8 @@ sub vcl_recv {
 
 Above VCL adds authorization based on `X-Secret` request headers, which is compared to in-VCL generated MD5 hash combined from a secret value, client IP and `Host` header.
 
+### `read()`, `write()`
+
 vmod-shell can also be used as a simple logging mechanism:
 
 ```vcl
@@ -106,6 +112,28 @@ Above VCL logs all non-200 responses to `/tmp/vcl.log`:
 [Sun, 14 Jan 2018 11:52:28 GMT][HTTP 404] vmod.shell.com/image.jpg
 [Sun, 14 Jan 2018 11:52:28 GMT][HTTP 403] vmod.shell.com/get.php
 ```
+
+> **Notice**: Separate `write()` and `read()` calls do locking individually which is not safe in cross-request handling manners, if you need to call both of these - call `cmd()`.
+
+### `exec_once()`
+
+Use `shell.exec_once()` function to execute command and get it's whole output as string:
+
+```vcl
+vcl 4.0;
+import shell;
+
+sub vcl_deliver {
+    return synth(200, "OK");
+}
+
+sub vcl_synth {
+    set resp.http.X-Server = shell.exec_once("uname -a");
+    synthetic(shell.exec_once("ps aux | grep varnish"));
+}
+```
+
+> **Notice**: When output contains multiple lines and needs to be stored in a header, it is useful to join them by piping through `xargs` - for example `ls -1 /etc/varnish | xargs` for space-separated list. If you need different separator use `paste` - for example, comma-separated list can be achieved with `ls -1 /etc/varnish | paste -s -d',' -`.
 
 ## Licence
 

@@ -132,3 +132,30 @@ vmod_exec_pid(VRT_CTX, struct vmod_shell_exec *shell)
 {
     return shell->process->pid;
 }
+
+VCL_STRING vmod_exec_once(VRT_CTX, VCL_STRING cmd)
+{
+    FILE *fd;
+    fd = popen(cmd, "r");
+    if (!fd)
+        return "";
+
+    char   buffer[256];
+    size_t read;
+    size_t buffer_size = 256;
+    size_t result_len = 0;
+    char  *result = malloc(buffer_size);
+
+    while ((read = fread(buffer, 1, sizeof(buffer), fd)) != 0) {
+        if (result_len + read >= buffer_size) {
+            buffer_size *= 2;
+            result = realloc(result, buffer_size);
+        }
+        memmove(result + result_len, buffer, read);
+        result_len += read;
+    }
+    pclose(fd);
+    rtrim(result);
+
+    return result;
+}
