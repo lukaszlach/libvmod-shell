@@ -1,0 +1,25 @@
+image: debian:stretch-slim
+stages:
+  - build
+
+variables:
+  VARNISH_VERSION: "5.2"
+
+build:
+  stage: build
+  before_script:
+    - apt-get update
+    - apt-get install -y curl wget make git automake autotools-dev pkg-config build-essential libtool python-docutils gcc php7.0-cli bc
+    - curl -s https://packagecloud.io/install/repositories/varnishcache/varnish5/script.deb.sh | bash
+    - apt-get install -y varnish=$VARNISH_VERSION* varnish-dev=$VARNISH_VERSION*
+  script:
+    - ./autogen.sh
+    - ./configure --prefix=/usr
+    - make -j4
+    - find ./src/.libs/
+    - cp *.php /srv
+    - make check -j4
+  after_script:
+    - if [ -f src/test-suite.log ]; then cat src/test-suite.log; fi
+  only:
+    - master

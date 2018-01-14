@@ -1,0 +1,6 @@
+$Module shell 3 Shell VMOD
+$Object exec(STRING cmd)
+$Method STRING .read()
+$Method BOOL .write(STRING value)
+$Method STRING .cmd(STRING value)
+$Method INT .pid()
