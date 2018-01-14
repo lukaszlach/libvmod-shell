@@ -1,4 +1,4 @@
-# lukaszlach / vmod-shell
+# lukaszlach / libvmod-shell
 
 ![Version](https://img.shields.io/badge/version-1.0-lightgrey.svg?style=flat)
 ![Version](https://img.shields.io/badge/Varnish-5-blue.svg?style=flat)
@@ -20,8 +20,8 @@ INT    <obj>.pid()
 ## Building
 
 ```bash
-git clone https://github.com/lukaszlach/vmod-shell.git vmod-shell/
-cd vmod-shell/
+git clone https://github.com/lukaszlach/libvmod-shell.git libvmod-shell/
+cd libvmod-shell/
 ./autogen.sh
 ./configure
 make
